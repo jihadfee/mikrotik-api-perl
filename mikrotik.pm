@@ -36,6 +36,7 @@ our @EXPORT = qw(
 			Mikrotik_Attrib
 			Mikrotik_Query
 			Mikrotik_Execute
+			Mikrotik_Cancel
 			Mikrotik_Do
 			Mikrotik_readSingle
 			Mikrotik_readSentence
@@ -226,6 +227,44 @@ sub Mikrotik_Execute
 	{
 		return (Mikrotik_readSentence($sock));
 	}
+}
+
+#Execute a Cancel Command
+#INPUT Socket and or a tag number
+#
+#RETURN Status and reference to a HASH with the result's of the Command sent
+
+
+sub Mikrotik_Cancel
+{
+	my $sock = $_[0];
+	my $dummy;
+	my $tag;
+	my $status;
+	my $rep;
+	my %rep;
+	my @tag;
+		
+ 	Mikrotik_Command ($sock,"/cancel");
+ 	if (defined $_[1])
+	{
+ 		Mikrotik_Attrib_tag ($sock,$_[1]);
+ 	}
+ 	($status, $rep) = Mikrotik_Execute($sock);
+ 
+ 	$dummy = Mikrotik_readWord($sock);
+	$tag   = Mikrotik_readWord($sock);
+ 	$dummy = Mikrotik_readWord($sock);
+	$tag   = Mikrotik_readWord($sock);
+
+ 	if (defined $tag)
+	{
+		@tag = split /=/,$tag;
+ 		%rep = %{$rep};
+ 		$rep{'.tag'} = $tag[1];
+ 		$rep = \%rep;
+ 	}
+	return ($status, $rep);  
 }
 
 #DO Execute a Command
