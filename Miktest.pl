@@ -57,6 +57,7 @@ if ($status)
 		print"$rep{$key}{'size'} bytes from $address \($rep{$key}{'host'}\): icmp_req=$rep{$key}{'seq'} ttl=$rep{$key}{'ttl'} time=$rep{$key}{'time'}\n";
 	}
 
+	print "\nPING with waiting\n";
 
 
 	Mikrotik_Close($socklocal);
