@@ -75,32 +75,46 @@ sub Mikrotik_Connect
 	my $md5;
 	my $digest;
 	my @command;
+	my $status;
 
 	$sock = new IO::Socket::INET(
 			PeerAddr => $host,
 			PeerPort => $port,
-			Proto	 => $proto) or die "Error Creating Socket : $!\n";
+			Proto	 => $proto);
 	
-	push(@command, '/login');
+	if (defined $sock) 
+	{
+		push(@command, '/login');
 	
-	Mikrotik_writeSentence($sock,\@command);
-	$ret = Mikrotik_readWord($sock);
-	$ret = Mikrotik_readWord($sock);
-	@ret = split /=/,$ret;
+		Mikrotik_writeSentence($sock,\@command);
+		$ret = Mikrotik_readWord($sock);
+		$ret = Mikrotik_readWord($sock);
+		@ret = split /=/,$ret;
 
-	$chal = pack("H*",$ret[2]);
+		$chal = pack("H*",$ret[2]);
 
-	$md5 = new Digest::MD5;
-	$md5->add(chr(0));
-	$md5->add($password);
-	$md5->add($chal);
-	$digest = $md5->hexdigest;
+		$md5 = new Digest::MD5;
+		$md5->add(chr(0));
+		$md5->add($password);
+		$md5->add($chal);
+		$digest = $md5->hexdigest;
 
-	push(@command, '/login');
-	push(@command, '=name=' . $username);
-	push(@command, '=response=00' . $digest);
+		push(@command, '/login');
+		push(@command, '=name=' . $username);
+		push(@command, '=response=00' . $digest);
 
-	return ($sock,Mikrotik_Do($sock,\@command));
+		($status, $ret) = Mikrotik_Do($sock,\@command);
+	}
+	else
+	{
+		my $error = 'Error Creating Socket to '.$host;
+		$status = 0;
+		my %ret = ( 'error' => $error );
+		$ret = \%ret;
+		$sock = 0;
+		
+	}
+	return ($sock,$status,$ret);
 }
 
 #Write a Command to the router
