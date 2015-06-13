@@ -630,6 +630,7 @@ sub Mikrotik_print
 my $status = $_[0];
 my $rep = $_[1];
 my %rep;
+my %rep2;
 my $key;
 my @keys;
 my $key2;
@@ -645,7 +646,8 @@ if ($status)
 	
 	foreach $key (@keys)
 	{
-		@keys2 = (keys $rep{$key});
+		%rep2 = %{$rep{$key}};
+		@keys2 = (keys %rep2);
 		foreach $key2 (@keys2)
 		{
 			$value = $rep{$key}{$key2};
