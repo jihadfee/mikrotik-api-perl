@@ -27,7 +27,7 @@ if ($status)
 	print "\nShow how to use PING with attrib\n\n";
 
 	$command = "/ping";
-	my $address = '4.2.2.2';
+	my $address = 'www.google.com';
 	%attrib = (
 		'address' => $address,
 		'count' => '2'
@@ -62,7 +62,7 @@ if ($status)
 	my $noret = 1;
 
 	$command = "/ping";
-	$address = '4.2.2.2';
+	$address = '8.8.8.8';
 	%attrib = (
 		'address' => $address,
 	);

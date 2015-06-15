@@ -84,7 +84,7 @@ sub Mikrotik_Connect
 	
 	if (defined $sock) 
 	{
-		push(@command, '/login');
+		@command = ('/login');
 	
 		Mikrotik_writeSentence($sock,\@command);
 		$ret = Mikrotik_readWord($sock);
@@ -99,9 +99,7 @@ sub Mikrotik_Connect
 		$md5->add($chal);
 		$digest = $md5->hexdigest;
 
-		push(@command, '/login');
-		push(@command, '=name=' . $username);
-		push(@command, '=response=00' . $digest);
+		@command = ('/login','=name='.$username,'=response=00'.$digest);
 
 		($status, $ret) = Mikrotik_Do($sock,\@command);
 	}
