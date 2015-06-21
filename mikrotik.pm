@@ -46,6 +46,7 @@ our @EXPORT = qw(
 			Mikrotik_print
 			Mikrotik_Close
 			Mikrotik_Set_DEBUG
+			Mikrotik_Print_Error
 			);
 			
 our @EXPORT_OK = qw(
@@ -355,6 +356,8 @@ sub Mikrotik_readSentence
 		my $value;
 		my $status = 0;
 		my $element = 0;
+		my $message_len = 1;
+		my $c = 0;
 
 
  		while (1)
@@ -376,7 +379,7 @@ sub Mikrotik_readSentence
  				elsif ($word =~ /!trap/)
  				{
  					$word = Mikrotik_readWord($sock);
-
+ 					if (length($word) > 0x80) {$message_len++}
  					if ($word =~ /.tag/)
  					{
  						($key,$value) = split /=/,$word;
@@ -404,8 +407,7 @@ sub Mikrotik_readSentence
 					else
 					{
 						$sentence{$key} = $value;
-					}
-									
+					}			
  					$word = Mikrotik_readWord($sock);
 					if (defined ($word))
 					{
@@ -436,9 +438,11 @@ sub Mikrotik_readSentence
 					$sentence{$element}{$key} = $value;
 				}
  		}
- 		
- 		$dummy = Mikrotik_readWord($sock);
- 		
+
+ 		for ($c=1; $c <= $message_len; $c++)
+ 		{
+ 			$dummy = Mikrotik_readWord($sock);
+		}		
  		return ($status, \%sentence);
 }
 
@@ -484,45 +488,44 @@ sub Mikrotik_readLen
 	my $sock = $_[0];
 	my $line;
 	my $len;
-	$sock->recv($line,1);
-	$len = ord($line);
-	if ($len & 0x80)
+	$len = ord(Mikrotik_readstr($sock,1));
+	if (($len & 0x80) == 0x00)
 	{
-		last;
+			#Skip
 	}
-	elsif ($len & 0xC0 == 0x80)
+	elsif (($len & 0xC0) == 0x80)
 	{
 		$len &= !0xC0;
 		$len <<= 8;
-		$len += Mikrotik_readLen($sock);
+		$len += ord(Mikrotik_readstr($sock,1));
 	}
-	elsif ($len & 0xE0 == 0xC0)
+	elsif (($len & 0xE0) == 0xC0)
 	{
 		$len &= !0xE0;
 		$len <<= 8;
-		$len += Mikrotik_readLen($sock);
-		$len <<=8;
-		$len += Mikrotik_readLen($sock);
+		$len += ord(Mikrotik_readstr($sock,1));
+		$len <<= 8;
+		$len += ord(Mikrotik_readstr($sock,1));
 	}
-	elsif ($len & 0xF0 == 0xE0)
+	elsif (($len & 0xF0) == 0xE0)
 	{
 		$len &= !0xF0;
 		$len <<= 8;
-		$len += Mikrotik_readLen($sock);
-		$len <<=8;
-		$len += Mikrotik_readLen($sock);        
-		$len <<=8;
-		$len += Mikrotik_readLen($sock);       
-	}
-	elsif ($len & 0xF8 == 0xF0)
-	{
-		$len = Mikrotik_readLen($sock);
+		$len += ord(Mikrotik_readstr($sock,1));
 		$len <<= 8;
-		$len += Mikrotik_readLen($sock);
-		$len <<=8;
-		$len += Mikrotik_readLen($sock);        
-		$len <<=8;
-		$len += Mikrotik_readLen($sock);    
+		$len += ord(Mikrotik_readstr($sock,1));        
+		$len <<= 8;
+		$len += ord(Mikrotik_readstr($sock,1));       
+	}
+	elsif (($len & 0xF8) == 0xF0)
+	{
+		$len = ord(Mikrotik_readstr($sock,1));
+		$len <<= 8;
+		$len += ord(Mikrotik_readstr($sock,1));
+		$len <<= 8;
+		$len += ord(Mikrotik_readstr($sock,1));        
+		$len <<= 8;
+		$len += ord(Mikrotik_readstr($sock,1));    
 	}
 	if ($debug == 5) { Mikrotik_FULL_DEBUG ($sock,$len,"L"); }
 	return $len;
@@ -743,5 +746,17 @@ sub Mikrotik_Set_DEBUG
 	}
 }
 
+sub Mikrotik_Print_Error
+{
+		my %rep;
+		my @keys;
+		my $key;
+		%rep = %{$_[0]};
+		@keys = sort(keys %rep);
+  		foreach $key (@keys)
+		{
+			print "$key = $rep{$key}\n";
+		}
+}
 
 1;

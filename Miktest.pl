@@ -25,6 +25,8 @@ my $proplist;
 if ($status)
 {
 	print "\nShow how to use PING with attrib\n\n";
+	
+	Mikrotik_Set_DEBUG(0);
 
 	$command = "/ping";
 	my $address = 'www.google.com';
@@ -37,26 +39,38 @@ if ($status)
 	Mikrotik_Attrib ($socklocal,\%attrib);
 	($status, $rep) = Mikrotik_Execute($socklocal);
 
-
-	%rep = %{$rep};
-	@keys = (keys %rep);	
-
-	@keys = sort {$a <=> $b} @keys;
-	
-	print "PING $address \($rep{1}{'host'}\) $rep{1}{'size'} bytes of data\n";
-
-	foreach $key (@keys)
+	if ($status)
 	{
-		if ( defined $rep{$key}{'status'})
+		%rep = %{$rep};
+		@keys = (keys %rep);	
+
+		@keys = sort {$a <=> $b} @keys;
+		if	(defined $rep{1}{'status'})
 		{
-			print "Request timeout for icmp_seq $rep{$key}{'seq'}\n";
+			print "PING \($address\) $address 56 bytes of data\n";
 		}
 		else
 		{
-			print"$rep{$key}{'size'} bytes from $address \($rep{$key}{'host'}\): icmp_req=$rep{$key}{'seq'} ttl=$rep{$key}{'ttl'} time=$rep{$key}{'time'}\n";
+			print "PING $address \($rep{1}{'host'}\) $rep{1}{'size'} bytes of data\n";
+		}
+
+		foreach $key (@keys)
+		{
+			if ( defined $rep{$key}{'status'})
+			{
+				print "Request timeout for icmp_seq $rep{$key}{'seq'}\n";
+			}
+			else
+			{
+				print"$rep{$key}{'size'} bytes from $address \($rep{$key}{'host'}\): icmp_req=$rep{$key}{'seq'} ttl=$rep{$key}{'ttl'} time=$rep{$key}{'time'}\n";
+			}
 		}
 	}
-
+	else
+	{
+		Mikrotik_Print_Error($rep);
+	}
+	
 	print "\nPING with out waiting\n";
 
 	my $noret = 1;
@@ -64,7 +78,7 @@ if ($status)
 	$command = "/ping";
 	$address = '8.8.8.8';
 	%attrib = (
-		'address' => $address,
+		'address' => $address
 	);
 
 	Mikrotik_Command ($socklocal,$command);
@@ -73,8 +87,8 @@ if ($status)
 
 	for ($c = 1; $c <= 3; $c++)
 	{	
- 			($status, $rep) = Mikrotik_readSingle($socklocal,$c);
- 			%rep = %{$rep};
+ 		($status, $rep) = Mikrotik_readSingle($socklocal,$c);
+ 		%rep = %{$rep};
  			if ($c == 1) {	print "PING $address \($rep{$c}{'host'}\) $rep{$c}{'size'} bytes of data\n"; }
 			if ( defined $rep{$c}{'status'})
 			{
@@ -87,7 +101,8 @@ if ($status)
 	}
 	
  	Mikrotik_print(Mikrotik_Cancel ($socklocal));	
-		
+
+	
 	print "\nPING with tag and with out waiting\n";
 
 	$command = "/ping";
@@ -105,7 +120,7 @@ if ($status)
  	{	
 			($status, $rep) = Mikrotik_readSingle($socklocal,$c);
 			%rep = %{$rep};
- 			if ($c == 1) {	print "PING $address \($rep{$c}{'host'}\) $rep{$c}{'size'} bytes of data\n"; }		
+ 			if (($c == 1) and ($rep{$c}{'.tag'} eq '22')) {	print "PING $address \($rep{$c}{'host'}\) $rep{$c}{'size'} bytes of data and tag=$rep{$c}{'.tag'}\n"; }		
  
  			if ($rep{$c}{'.tag'} eq '22')
  			{
@@ -160,7 +175,6 @@ if ($status)
 	Mikrotik_Command ($socklocal,$command);
 	Mikrotik_Attrib($socklocal,\%attrib);
 	Mikrotik_print(Mikrotik_Execute($socklocal));
-
 
 	Mikrotik_Close($socklocal);
 }
